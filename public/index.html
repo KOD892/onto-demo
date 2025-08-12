@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ONT ID Login Demo</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(135deg, #2b5876, #4e4376);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      animation: fadeIn 0.8s ease;
+    }
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 12px 25px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 30px;
+      margin: 10px 5px;
+      transition: transform 0.2s ease, background-color 0.3s ease;
+    }
+    #loginBtn {
+      background: linear-gradient(45deg, #56ab2f, #a8e063);
+      color: white;
+    }
+    #logoutBtn {
+      background: linear-gradient(45deg, #e53935, #e35d5b);
+      color: white;
+      display: none;
+    }
+    button:hover {
+      transform: scale(1.05);
+      filter: brightness(1.1);
+    }
+    #walletAddress {
+      margin: 15px 0;
+      font-weight: bold;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 10px;
+      border-radius: 8px;
+      display: none;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      min-height: 24px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Login with ONT ID</h1>
+    <div id="walletAddress"></div>
+    <button id="loginBtn">Login</button>
+    <button id="logoutBtn">Logout</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    /* All original JS functionality from provided code remains unchanged */
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const resultDiv = document.getElementById("result");
+    const walletAddressDiv = document.getElementById("walletAddress");
+    const provider = window.ethereum || window.onto;
+
+    function updateUI(isLoggedIn) {
+      if (isLoggedIn) {
+        loginBtn.textContent = "Connected";
+        loginBtn.disabled = true;
+        loginBtn.style.background = "#888";
+        logoutBtn.style.display = "inline-block";
+        const walletAddress = localStorage.getItem("walletAddress");
+        if (walletAddress) {
+          walletAddressDiv.textContent = `Wallet Address: ${walletAddress}`;
+          walletAddressDiv.style.display = "block";
+        }
+        resultDiv.innerHTML = "✅ Logged in";
+      } else {
+        loginBtn.textContent = "Login";
+        loginBtn.disabled = false;
+        loginBtn.style.background = "linear-gradient(45deg, #56ab2f, #a8e063)";
+        logoutBtn.style.display = "none";
+        walletAddressDiv.textContent = "";
+        walletAddressDiv.style.display = "none";
+        resultDiv.innerHTML = "";
+      }
+    }
+
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    updateUI(isLoggedIn);
+
+    window.signData = function(account, signData) {
+      return new Promise((resolve, reject) => {
+        const methods = ['eth_signTypedData_v4', 'eth_signTypedData_v3', 'eth_signTypedData'];
+        let methodIndex = 0;
+        function tryNextMethod() {
+          if (methodIndex >= methods.length) {
+            const message = `Login to ONT ID Demo: ${signData.message.nonce}`;
+            provider.request({ method: 'eth_sign', params: [account, message] })
+              .then(signature => resolve({ signature, method: 'eth_sign' }))
+              .catch(() => reject(new Error('No supported signing method found.')));
+            return;
+          }
+          const method = methods[methodIndex];
+          provider.request({ method, params: [account, JSON.stringify(signData)] })
+            .then(signature => resolve({ signature, method }))
+            .catch(() => { methodIndex++; tryNextMethod(); });
+        }
+        tryNextMethod();
+      });
+    };
+
+    loginBtn.addEventListener("click", async () => {
+      try {
+        if (!provider) throw new Error("No Ethereum provider found.");
+        const authRequest = {
+          type: "AuthRequest",
+          chain: "eth",
+          app: "ONT ID Demo App",
+          name: "ONT ID Demo",
+          version: "1.0",
+          challenge: "login-challenge",
+          domain: window.location.hostname,
+          issuer: "did:ont:issuer",
+          requestId: Date.now().toString(),
+          callbackUrl: `${window.location.protocol}//${window.location.host}/submit-auth`
+        };
+        const challengeResponse = await fetch("/get-challenge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ authRequest })
+        });
+        if (!challengeResponse.ok) throw new Error("Challenge fetch failed");
+        const challenge = await challengeResponse.json();
+        const accounts = await provider.request({ method: "eth_requestAccounts" });
+        const account = accounts[0];
+        const did = `did:etho:${account.replace("0x", "")}`;
+        const signData = {
+          types: {
+            EIP712Domain: [
+              { name: "name", type: "string" },
+              { name: "version", type: "string" },
+              { name: "chainId", type: "uint256" },
+              { name: "verifyingContract", type: "address" }
+            ],
+            AuthChallenge: [
+              { name: "nonce", type: "string" },
+              { name: "did", type: "string" },
+              { name: "created", type: "string" }
+            ]
+          },
+          domain: {
+            name: "ONT ID Demo",
+            version: "1.0",
+            chainId: 1,
+            verifyingContract: "0x0000000000000000000000000000000000000000"
+          },
+          primaryType: "AuthChallenge",
+          message: {
+            nonce: challenge.nonce,
+            did,
+            created: new Date().toISOString()
+          }
+        };
+        const { signature, method } = await window.signData(account, signData);
+        const authResponse = {
+          ver: "1.0",
+          type: "ClientResponse",
+          nonce: challenge.nonce,
+          did,
+          proof: {
+            type: method === 'eth_sign' ? 'eth_sign' : 'ecdsa',
+            verificationMethod: `${did}#key-1`,
+            created: signData.message.created,
+            value: signature
+          },
+          VPs: []
+        };
+        const resultResponse = await fetch("/submit-auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(authResponse)
+        });
+        const result = await resultResponse.json();
+        if (result.error) throw new Error(result.error);
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("walletAddress", account);
+        updateUI(true);
+      } catch (error) {
+        resultDiv.innerHTML = `❌ Login failed: ${error.message}`;
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await fetch("/logout", { method: "POST" });
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("walletAddress");
+        updateUI(false);
+      } catch (error) {
+        resultDiv.innerHTML = `❌ Logout failed: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

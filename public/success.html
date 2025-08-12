@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login Success</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(135deg, #11998e, #38ef7d);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      animation: fadeIn 0.8s ease;
+    }
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 20px;
+    }
+    .wallet-info {
+      margin-bottom: 20px;
+      font-weight: bold;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 10px;
+      border-radius: 8px;
+      word-wrap: break-word;
+    }
+    button {
+      padding: 12px 25px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 30px;
+      background: linear-gradient(45deg, #e53935, #e35d5b);
+      color: white;
+      transition: transform 0.2s ease, background-color 0.3s ease;
+    }
+    button:hover {
+      transform: scale(1.05);
+      filter: brightness(1.1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Login Successful!</h1>
+    <div class="wallet-info" id="walletAddress"></div>
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const address = urlParams.get('address');
+    const token = urlParams.get('token');
+
+    document.getElementById('walletAddress').innerHTML = `
+      <strong>Wallet Address:</strong> ${address || 'Not provided'}<br>
+      <strong>Token:</strong> ${token || 'Not provided'}
+    `;
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/logout', { method: 'POST' });
+      window.location.href = '/';
+    });
+  </script>
+</body>
+</html>
