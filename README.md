@@ -4,11 +4,11 @@ This project lets you log in using your **ONTO Wallet Extension** and **Ont ID**
 
 ## Steps to Run the Project
 
-1. **Clone the Repository**
+1. **Clone the github Repository**
 
    ```bash
-   git clone https://github.com/barnazaka/ont-demo
-   cd Ont-demo
+   git clone https://github.com/KOD892/onto-demo.git
+   cd Onto-demo
    ```
 
 2. **Install Dependencies**
@@ -30,7 +30,7 @@ This project lets you log in using your **ONTO Wallet Extension** and **Ont ID**
 3. On the login page, click **"Login with Ont ID"**.
 4. Approve the login request in the wallet extension popup.
 
-✅ You are now logged in using **Ont ID**.
+✅ You are now logged in using your **Ont ID**.
 
 ---
 
