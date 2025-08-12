@@ -34,6 +34,6 @@ This project lets you log in using your **ONTO Wallet Extension** and **Ont ID**
 
 ---
 
-**📺 Video Tutorial:** https://drive.google.com/drive/folders/1c7i8LhLYLVw-vC0oYDjglpr-ZYU3Jk9t?usp=sharing
+**📺 Video Tutorial:** https://drive.google.com/file/d/1AzBg6wRyJu9tkMxSCu_UUacrmPE3ApHM/view?usp=sharing
 
 ---
